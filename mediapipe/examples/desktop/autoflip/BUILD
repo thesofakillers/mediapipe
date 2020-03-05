@@ -35,7 +35,7 @@ mediapipe_cc_proto_library(
 )
 
 cc_binary(
-    name = "run_autoflip",
+    name = "run_autoflip_custom",
     deps = [
         "//mediapipe/calculators/core:packet_thinner_calculator",
         "//mediapipe/calculators/image:scale_image_calculator",

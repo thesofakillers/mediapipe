@@ -14,6 +14,7 @@
 
 #include "mediapipe/examples/desktop/autoflip/quality/scene_cropper.h"
 
+#include <fstream>
 #include "absl/memory/memory.h"
 #include "mediapipe/examples/desktop/autoflip/quality/polynomial_regression_path_solver.h"
 #include "mediapipe/examples/desktop/autoflip/quality/utils.h"
@@ -21,15 +22,18 @@
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status.h"
 
-namespace mediapipe {
-namespace autoflip {
+namespace mediapipe
+{
+namespace autoflip
+{
 
 ::mediapipe::Status SceneCropper::CropFrames(
-    const SceneKeyFrameCropSummary& scene_summary,
-    const std::vector<cv::Mat>& scene_frames,
-    const std::vector<FocusPointFrame>& focus_point_frames,
-    const std::vector<FocusPointFrame>& prior_focus_point_frames,
-    std::vector<cv::Mat>* cropped_frames) const {
+    const SceneKeyFrameCropSummary &scene_summary,
+    const std::vector<cv::Mat> &scene_frames,
+    const std::vector<FocusPointFrame> &focus_point_frames,
+    const std::vector<FocusPointFrame> &prior_focus_point_frames,
+    std::vector<cv::Mat> *cropped_frames) const
+{
   RET_CHECK_NE(cropped_frames, nullptr) << "Output cropped frames is null.";
 
   const int num_scene_frames = scene_frames.size();
@@ -60,7 +64,8 @@ namespace autoflip {
                                           all_xforms.end());
 
   // Convert the matrix from center-aligned to upper-left aligned.
-  for (cv::Mat& xform : scene_frame_xforms) {
+  for (cv::Mat &xform : scene_frame_xforms)
+  {
     cv::Mat affine_opencv = cv::Mat::eye(2, 3, CV_32FC1);
     affine_opencv.at<float>(0, 2) =
         -(xform.at<float>(0, 2) + frame_width / 2 - crop_width / 2);
@@ -69,9 +74,20 @@ namespace autoflip {
     xform = affine_opencv;
   }
 
+  // append dx to file
+  std::ofstream outfile;
+  outfile.open("unique_file_name.txt", std::ios_base::app); // append instead of overwrite
+  for (cv::Mat &xform : scene_frame_xforms)
+  {
+    float dx = xform.at<float>(0, 2);
+    outfile << dx << std::endl;
+  }
+  outfile.close();
+
   // Prepares cropped frames.
   cropped_frames->resize(num_scene_frames);
-  for (int i = 0; i < num_scene_frames; ++i) {
+  for (int i = 0; i < num_scene_frames; ++i)
+  {
     (*cropped_frames)[i] =
         cv::Mat::zeros(crop_height, crop_width, scene_frames[i].type());
   }
@@ -80,5 +96,5 @@ namespace autoflip {
                         scene_frame_xforms, cropped_frames);
 }
 
-}  // namespace autoflip
-}  // namespace mediapipe
+} // namespace autoflip
+} // namespace mediapipe
