@@ -153,14 +153,6 @@ class SceneCroppingCalculator : public CalculatorBase {
   ::mediapipe::Status ProcessScene(const bool is_end_of_scene,
                                    CalculatorContext* cc);
 
-  // Formats and outputs the cropped frames. Scales them to be at least as big
-  // as the target size. If the aspect ratio is different, applies padding. Uses
-  // solid background from static features if possible, otherwise uses blurred
-  // background. Sets apply_padding to true if the scene is padded.
-  ::mediapipe::Status FormatAndOutputCroppedFrames(
-      const std::vector<cv::Mat>& cropped_frames, bool* apply_padding,
-      float* vertical_fill_precent, CalculatorContext* cc);
-
   // Draws and outputs visualization frames if those streams are present.
   ::mediapipe::Status OutputVizFrames(
       const std::vector<KeyFrameCropResult>& key_frame_crop_results,
@@ -176,6 +168,9 @@ class SceneCroppingCalculator : public CalculatorBase {
   int target_height_ = -1;
   double target_aspect_ratio_ = -1.0;
 
+  // output file path
+  std::string output_file_path_;
+    
   // Input video frame size and format.
   int frame_width_ = -1;
   int frame_height_ = -1;
