@@ -56,6 +56,7 @@ class SceneCropper {
       const std::vector<cv::Mat>& scene_frames,
       const std::vector<FocusPointFrame>& focus_point_frames,
       const std::vector<FocusPointFrame>& prior_focus_point_frames,
+      const std::string& output_file_name,
       std::vector<cv::Mat>* cropped_frames) const;
 };
 

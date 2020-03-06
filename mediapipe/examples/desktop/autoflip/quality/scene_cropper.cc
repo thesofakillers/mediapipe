@@ -32,6 +32,7 @@ namespace autoflip
     const std::vector<cv::Mat> &scene_frames,
     const std::vector<FocusPointFrame> &focus_point_frames,
     const std::vector<FocusPointFrame> &prior_focus_point_frames,
+    const std::string &output_file_name,
     std::vector<cv::Mat> *cropped_frames) const
 {
     RET_CHECK_NE(cropped_frames, nullptr) << "Output cropped frames is null.";
@@ -65,7 +66,7 @@ namespace autoflip
 
     // append center-aligned dx, dy to csv file
     std::ofstream outfile;
-    outfile.open("autoflip_output/center_camera_ramsay.csv", std::ios_base::app);
+    outfile.open(output_file_name, std::ios_base::app);
     for (cv::Mat &xform : scene_frame_xforms)
     {
         float dx = xform.at<float>(0, 2);
