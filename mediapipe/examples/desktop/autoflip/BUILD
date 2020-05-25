@@ -37,12 +37,10 @@ mediapipe_cc_proto_library(
 cc_binary(
     name = "run_autoflip",
     deps = [
+        "//mediapipe/calculators/core:flow_limiter_calculator",
         "//mediapipe/calculators/core:packet_thinner_calculator",
         "//mediapipe/calculators/image:scale_image_calculator",
-        "//mediapipe/calculators/video:opencv_video_decoder_calculator",
-        "//mediapipe/calculators/video:opencv_video_encoder_calculator",
-        "//mediapipe/calculators/video:video_pre_stream_calculator",
-        "//mediapipe/examples/desktop:simple_run_graph_main",
+        "//mediapipe/examples/desktop:demo_run_graph_main",
         "//mediapipe/examples/desktop/autoflip/calculators:border_detection_calculator",
         "//mediapipe/examples/desktop/autoflip/calculators:face_to_region_calculator",
         "//mediapipe/examples/desktop/autoflip/calculators:localization_to_region_calculator",
