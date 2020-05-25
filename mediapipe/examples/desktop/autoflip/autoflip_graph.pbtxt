@@ -1,21 +1,35 @@
-# Autoflip graph that only renders the final cropped video. For use with
-# end user applications.
-max_queue_size: -1
 
-# VIDEO_PREP: Decodes an input video file into images and a video header.
+# Images on CPU coming into and out of the graph.
+input_stream: "input_video"
+output_stream: "output_video"
+
+# Throttles the images flowing downstream for flow control. It passes through
+# the very first incoming image unaltered, and waits for
+# SceneCroppingCalculator downstream in the graph to finish
+# generating the corresponding calculations before it passes through another
+# image. All images that come in while waiting are dropped, limiting the number
+# of in-flight images between this calculator and
+# SceneCroppingCalculator to 1. This prevents the nodes in between
+# from queuing up incoming images and data excessively, which leads to increased
+# latency and memory usage, unwanted in real-time mobile applications. It also
+# eliminates unnecessarily computation.
 node {
-  calculator: "OpenCvVideoDecoderCalculator"
-  input_side_packet: "INPUT_FILE_PATH:input_video_path"
-  output_stream: "VIDEO:video_raw"
-  output_stream: "VIDEO_PRESTREAM:video_header"
-  output_side_packet: "SAVED_AUDIO_PATH:audio_path"
+  calculator: "FlowLimiterCalculator"
+  input_stream: "input_video"
+  input_stream: "FINISHED:output_video"
+  input_stream_info: {
+    tag_index: "FINISHED"
+    back_edge: true
+  }
+  output_stream: "throttled_input_video"
 }
+
+
 
 # VIDEO_PREP: Scale the input video before feature extraction.
 node {
   calculator: "ScaleImageCalculator"
-  input_stream: "FRAMES:video_raw"
-  input_stream: "VIDEO_HEADER:video_header"
+  input_stream: "FRAMES:throttled_input_video"
   output_stream: "FRAMES:video_frames_scaled"
   options: {
     [mediapipe.ScaleImageCalculatorOptions.ext]: {
@@ -43,7 +57,7 @@ node {
 # DETECTION: find borders around the video and major background color.
 node {
   calculator: "BorderDetectionCalculator"
-  input_stream: "VIDEO:video_raw"
+  input_stream: "VIDEO:throttled_input_video"
   output_stream: "DETECTED_BORDERS:borders"
 }
 
@@ -152,15 +166,15 @@ node {
 node {
   calculator: "SceneCroppingCalculator"
   input_side_packet: "EXTERNAL_ASPECT_RATIO:aspect_ratio"
-  input_stream: "VIDEO_FRAMES:video_raw"
+  input_stream: "VIDEO_FRAMES:throttled_input_video"
   input_stream: "KEY_FRAMES:video_frames_scaled_downsampled"
   input_stream: "DETECTION_FEATURES:salient_regions"
   input_stream: "STATIC_FEATURES:borders"
   input_stream: "SHOT_BOUNDARIES:shot_change"
-  output_stream: "CROPPED_FRAMES:cropped_frames"
+  output_stream: "CROPPED_FRAMES:output_video"
   options: {
     [mediapipe.autoflip.SceneCroppingCalculatorOptions.ext]: {
-      max_scene_size: 600
+      max_scene_size: 60
       key_frame_crop_options: {
         score_aggregation_type: CONSTANT
       }
@@ -173,30 +187,6 @@ node {
         overlay_opacity: 0.6
       }
       target_size_type: MAXIMIZE_TARGET_DIMENSION
-    }
-  }
-}
-
-# ENCODING(required): encode the video stream for the final cropped output.
-node {
-  calculator: "VideoPreStreamCalculator"
-  # Fetch frame format and dimension from input frames.
-  input_stream: "FRAME:cropped_frames"
-  # Copying frame rate and duration from original video.
-  input_stream: "VIDEO_PRESTREAM:video_header"
-  output_stream: "output_frames_video_header"
-}
-
-node {
-  calculator: "OpenCvVideoEncoderCalculator"
-  input_stream: "VIDEO:cropped_frames"
-  input_stream: "VIDEO_PRESTREAM:output_frames_video_header"
-  input_side_packet: "OUTPUT_FILE_PATH:output_video_path"
-  input_side_packet: "AUDIO_FILE_PATH:audio_path"
-  options: {
-    [mediapipe.OpenCvVideoEncoderCalculatorOptions.ext]: {
-      codec: "avc1"
-      video_format: "mp4"
     }
   }
 }
