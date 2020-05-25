@@ -33,6 +33,10 @@ constexpr char kWindowName[] = "MediaPipe";
 DEFINE_string(
     calculator_graph_config_file, "",
     "Name of file containing text format CalculatorGraphConfig proto.");
+DEFINE_string(input_side_packets, "",
+              "Comma-separated list of key=value pairs specifying side packets "
+              "for the CalculatorGraph. All values will be treated as the "
+              "string type even if they represent doubles, floats, etc.");
 DEFINE_string(input_video_path, "",
               "Full path of video to load. "
               "If not provided, attempt to use a webcam.");
@@ -49,10 +53,22 @@ DEFINE_string(output_video_path, "",
   mediapipe::CalculatorGraphConfig config =
       mediapipe::ParseTextProtoOrDie<mediapipe::CalculatorGraphConfig>(
           calculator_graph_config_contents);
-
+  std::map<std::string, ::mediapipe::Packet> input_side_packets;
+  if (!FLAGS_input_side_packets.empty()) {
+    std::vector<std::string> kv_pairs =
+        absl::StrSplit(FLAGS_input_side_packets, ',');
+    for (const std::string& kv_pair : kv_pairs) {
+      std::vector<std::string> name_and_value = absl::StrSplit(kv_pair, '=');
+      RET_CHECK(name_and_value.size() == 2);
+      RET_CHECK(
+          !::mediapipe::ContainsKey(input_side_packets, name_and_value[0]));
+      input_side_packets[name_and_value[0]] =
+          ::mediapipe::MakePacket<std::string>(name_and_value[1]);
+    }
+  }
   LOG(INFO) << "Initialize the calculator graph.";
   mediapipe::CalculatorGraph graph;
-  MP_RETURN_IF_ERROR(graph.Initialize(config));
+  MP_RETURN_IF_ERROR(graph.Initialize(config, input_side_packets));
 
   LOG(INFO) << "Initialize the camera or load the video.";
   cv::VideoCapture capture;
